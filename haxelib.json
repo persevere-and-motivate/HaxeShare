@@ -1,0 +1,11 @@
+{
+    "name": "haxeshare",
+    "classPath": "source",
+    "description": "Client and server-based macro utility for web development.",
+    "license": "MIT",
+    "version": "1.0.0",
+    "releasenote": "Foundations.",
+    "url": "https://github.com/persevere-and-motivate/HaxeShare",
+    "tags": [ "utility", "web" ],
+    "contributors": [ "tienery" ]
+}
