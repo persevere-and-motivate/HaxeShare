@@ -1,6 +1,7 @@
 package hxshare;
 #if macro
 
+import haxe.macro.Type;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 
@@ -18,6 +19,8 @@ class Builder
     static var _structures:Array<Structure>;
     static var _currentStructure:Int = -1;
 
+    static var _options:RouterOptions;
+
     public static function init()
     {
         _structures = [];
@@ -32,6 +35,19 @@ class Builder
         addType("bool", macro :Bool, macro :sys.db.Types.SBool);
         addType("int", macro :Int, macro :sys.db.Types.SInt);
         addType("float", macro :Float, macro :sys.db.Types.SFloat);
+    }
+
+    public static function setupRouter(?options:RouterOptions = null)
+    {
+        if (options == null)
+        {
+            _options = {
+                clientOrServer: 0,
+                enableREST: true
+            };
+        }
+        else
+            _options = options;
     }
 
     public static function addType(identifier:String, clientType:ComplexType, serverType:ComplexType)
@@ -58,6 +74,11 @@ class Builder
         _structures[_currentStructure].fields.push(field);
     }
 
+    public static function addRestRoute(rootURL:String)
+    {
+        _structures[_currentStructure].restRootURL = rootURL;
+    }
+
     public static function build()
     {
         buildShared();
@@ -73,6 +94,93 @@ class Builder
 //
 // Begin Generated Code
 //
+
+    public static macro function generateServerRouter():Array<Field>
+    {
+        var fields = Context.getBuildFields();
+
+        //
+        // `router()` function. To be called inside the main function for functionality.
+        //
+
+        {
+            var caseValues = [];
+            for (struct in _structures)
+            {
+                var classType = macro $i{struct.name};
+
+                caseValues.push(macro
+                {
+                    if (routes[0] == $v{struct.restRootURL})
+                    {
+                        if (method != "GET")
+                        {
+                            if (routes.length == 2)
+                            {
+                                var id = Std.parseInt(routes[1]);
+                                Lib.print(Json.stringify($classType.modify(method, id)));
+                            }
+                            else
+                            {
+                                Web.setReturnCode(500);
+                                Lib.print("Method '" + method + "' is used for the URL route '" + routes[0] + "' but no `id` was given.");
+                            }
+                        }
+                        else
+                        {
+                            if (routes.length >= 2)
+                            {
+                                if (routes[1] == "all")
+                                {
+                                    Lib.print(Json.stringify($classType.all()));
+                                }
+                                else if (routes[1] == "search")
+                                {
+                                    Lib.print(Json.stringify($classType.search(routes[2])));
+                                }
+                                else
+                                {
+                                    var id = Std.parseInt(routes[1]);
+                                    if (id != null)
+                                    {
+                                        Lib.print(Json.stringify($classType.modify("GET", id)));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            var routerBody = macro {
+                var page = php.Web.getParams().get("page");
+                var routes = page.split("/");
+                var method = php.Web.getMethod();
+
+                if (routes.length > 0)
+                {
+                    $a{caseValues};
+                }
+            };
+
+            var routerFunction:Function = {
+                args: [],
+                expr: routerBody,
+                ret: null
+            };
+
+            var routerField:Field = {
+                access: [AStatic],
+                kind: FFun(routerFunction),
+                name: "router",
+                pos: Context.currentPos()
+            };
+
+            fields.push(routerField);
+        }
+
+        return fields;
+    }
 
     static function buildShared()
     {
