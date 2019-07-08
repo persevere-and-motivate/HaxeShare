@@ -95,7 +95,7 @@ class Builder
 // Begin Generated Code
 //
 
-    public static macro function generateServerRouter():Array<Field>
+    public static macro function generateServerREST():Array<Field>
     {
         var fields = Context.getBuildFields();
 

@@ -5,6 +5,8 @@ import haxe.Json;
 import js.html.XMLHttpRequest;
 #end
 
+using StringTools;
+
 class Request
 {
 
@@ -146,5 +148,35 @@ class Request
         request.send();
     }
     #end
+
+    /**
+    * This utility function provides an easy way to generate HTML in conjunction with an AJAX request.
+    *
+    * @param into The HTML value to use for the base result.
+    * @param data The JSON object to parse into the `into` HTML value, using "%member%" replacement notation.
+    * @param replace (optional) When using arrays, the unique value inside `into` to replace with the parsed results.
+    * @param template (optional) If `data` is guaranteed to be an array, then this is the `template` HTML to use for each object in the array. 
+    **/
+    public static function templatise(into:String, data:Dynamic, ?replace:String = null, ?template:String = null)
+    {
+        if (data.length == null) // in other words, not an array
+        {
+            for (field in Reflect.fields(data))
+            {
+                into = into.replace("%" + field + "%", Reflect.field(data, field));
+            }
+            return into;
+        }
+        else
+        {
+            var value = "";
+            for (i in 0...data.length)
+            {
+                value += templatise(template, data[i]);
+            }
+            into = into.replace(replace, value);
+            return into;
+        }
+    }
 
 }
