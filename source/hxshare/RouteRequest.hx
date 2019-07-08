@@ -11,7 +11,7 @@ typedef RouteRequest =
     **/
     var method:String;
     /**
-    * If using PUT, POST or GET for a complex search, the data to send to the server.
+    * If using PUT, POST, or GET for a complex search, the data to send to the server.
     **/
     @:optional var data:Dynamic;
     /**

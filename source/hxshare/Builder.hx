@@ -19,8 +19,6 @@ class Builder
     static var _structures:Array<Structure>;
     static var _currentStructure:Int = -1;
 
-    static var _options:RouterOptions;
-
     public static function init()
     {
         _structures = [];
@@ -35,19 +33,6 @@ class Builder
         addType("bool", macro :Bool, macro :sys.db.Types.SBool);
         addType("int", macro :Int, macro :sys.db.Types.SInt);
         addType("float", macro :Float, macro :sys.db.Types.SFloat);
-    }
-
-    public static function setupRouter(?options:RouterOptions = null)
-    {
-        if (options == null)
-        {
-            _options = {
-                clientOrServer: 0,
-                enableREST: true
-            };
-        }
-        else
-            _options = options;
     }
 
     public static function addType(identifier:String, clientType:ComplexType, serverType:ComplexType)
