@@ -201,9 +201,15 @@ Taking the above example, the following will happen:
  3. Then, in *each* value we retrieve, we parse the value `eachTemplate` and replace `%title%` with the actual title string of the product we get.
  4. Finally, inside the contents of `products.htm` should be a value identified as `%products%` - replace it with the parsed results.
 
-On a client-side server, this is done using AJAX while on the server it uses server resources to complete this task (however, the server functionality in the Router is not yet available).
+On the client-side, this is done using AJAX while on the server it uses server resources to complete this task (however, the server functionality in the Router is not yet available).
 
 Also be warned that only one item in `withRequest` is accepted. This may be changed into an actual object as making multiple AJAX requests on a single page load is potentially slow. When complex searching becomes available, it is likely this will become the case. More examples involving complex searching will also be available at the relevant times.
+
+Make sure as you finish up with your router to `execute()` like so:
+
+```haxe
+router.execute();
+```
 
 ### REST-based Server Router
 The REST-based server router generates code using basic RESTful notation. It detects the HTTP Method, checks the url passed into the `page` parameter (as used in the `Request` class) and then uses generated database objects to retrieve or `modify()` data.
