@@ -97,8 +97,8 @@ class Request
                     cb(request.responseText, true);
             }
         };
-        request.setRequestHeader("Content-Type", "application/json");
         request.open("PUT", "includes/index.php?page=" + url);
+        request.setRequestHeader("Content-Type", "application/json");
         request.send(Json.stringify(data));
     }
 
@@ -121,8 +121,8 @@ class Request
                     cb(request.responseText, true);
             }
         };
-        request.setRequestHeader("Content-Type", "application/json");
         request.open("POST", "includes/index.php?page=" + url);
+        request.setRequestHeader("Content-Type", "application/json");
         request.send(Json.stringify(data));
     }
 

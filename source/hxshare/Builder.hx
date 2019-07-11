@@ -33,6 +33,9 @@ class Builder
         addType("bool", macro :Bool, macro :sys.db.Types.SBool);
         addType("int", macro :Int, macro :sys.db.Types.SInt);
         addType("float", macro :Float, macro :sys.db.Types.SFloat);
+        addType("date", macro :Date, macro :sys.db.Types.SDate);
+        addType("time", macro :Date, macro :sys.db.Types.STimeStamp);
+        addType("datetime", macro :Date, macro :sys.db.Types.SDateTime);
     }
 
     public static function addType(identifier:String, clientType:ComplexType, serverType:ComplexType)
@@ -50,12 +53,13 @@ class Builder
         _currentStructure++;
     }
 
-    public static function addField(typeName:String, identifier:String, ?searchable:Bool = false)
+    public static function addField(typeName:String, identifier:String, ?displayName:String = "", ?searchable:Bool = false)
     {
         var field = new CField();
         field.typeName = typeName;
         field.identifier = identifier;
         field.searchable = searchable;
+        field.displayName = displayName;
         _structures[_currentStructure].fields.push(field);
     }
 
@@ -100,7 +104,11 @@ class Builder
                     {
                         if (method != "GET")
                         {
-                            if (routes.length == 2)
+                            if (routes.length == 1)
+                            {
+                                Lib.print(Json.stringify($classType.modify(method)));
+                            }
+                            else if (routes.length == 2)
                             {
                                 var id = Std.parseInt(routes[1]);
                                 Lib.print(Json.stringify($classType.modify(method, id)));
@@ -179,16 +187,17 @@ class Builder
                 if (type == null)
                     Context.error('`${f.typeName}` type not found.', Context.currentPos());
 
+                var meta = [];
+                meta.push({
+                    name: ":optional",
+                    pos: Context.currentPos()
+                });
+
                 typeFields.push({
                     kind: FVar(type),
                     pos: Context.currentPos(),
                     name: f.identifier,
-                    meta: [
-                        {
-                            name: ":optional",
-                            pos: Context.currentPos()
-                        }
-                    ]
+                    meta: meta
                 }); 
             }
 
@@ -377,22 +386,6 @@ class Builder
                 name: className,
                 pack: [ "data" ]
             };
-
-            var dataSetters = [];
-            switch (tType)
-            {
-                case TAnonymous(fields):
-                {
-                    for (i in 0...fields.length)
-                    {
-                        var f = fields[i];
-                        var fieldName = f.name;
-                        dataSetters.push(macro { item.$fieldName = data.$fieldName; });
-                    }
-                }
-                default:
-            }
-
            
             var modifyBody = macro {
                 if (method == "GET" && id > -1)
@@ -416,14 +409,17 @@ class Builder
                     else if (method == "POST" && id > -1)
                         item = manager.get(id);
                     
-                    if (id == null)
+                    if (item == null)
                     {
                         php.Web.setReturnCode(500);
                         php.Lib.print('The item with the id ' + id + ' does not exist.');
                         return null;
                     }
 
-                    $a{dataSetters};
+                    for (field in Reflect.fields(data))
+                    {
+                        Reflect.setField(item, field, Reflect.field(data, field));
+                    }
 
                     if (method == "PUT")
                         item.insert();
