@@ -20,15 +20,15 @@ class FormBuilder<T>
     * A callback function taking a data object respective of the given type
     * and returns a boolean value determining if object values are correct.
     **/
-    public var onValidate:(T) -> Bool;
+    public var onValidate:T -> Bool;
     /**
     * A callback function that is called when data is submitted to the server.
     **/
-    public var onSubmit:() -> Void;
+    public var onSubmit:Void -> Void;
     /**
     * A callback function that is called when a delete request is successful.
     **/
-    public var onDeleted:() -> Void;
+    public var onDeleted:Void -> Void;
 
     public function new(data:T = null, id:Int = -1)
     {
@@ -53,7 +53,7 @@ class FormBuilder<T>
     * @param editing (Optional) Sets a value determining if the form is either editing data or not.
     * @param id (Optional) If editing, the provided ID is the item to retrieve from the database to begin editing with.
     **/
-    public function beginDynamic(submitSelector:String, deleteSelector:String, structure:String, editing:Bool = false, id:Int = -1)
+    public function beginDynamic(submitSelector:String, structure:String, ?deleteSelector:String = "", editing:Bool = false, id:Int = -1)
     {
         if (editing && id > -1 && !dataFilled)
         {
@@ -115,20 +115,23 @@ class FormBuilder<T>
             }
         });
 
-        new JQ(deleteSelector).click(function(e)
+        if (deleteSelector != "")
         {
-            if (this.id > -1)
+            new JQ(deleteSelector).click(function(e)
             {
-                Request.delete(structure + "/" + this.id, function(content, success)
+                if (this.id > -1)
                 {
-                    if (success)
+                    Request.delete(structure + "/" + this.id, function(content, success)
                     {
-                        if (onDeleted != null)
-                            onDeleted();
-                    }
-                });
-            }
-        });
+                        if (success)
+                        {
+                            if (onDeleted != null)
+                                onDeleted();
+                        }
+                    });
+                }
+            });
+        }
     }
 
     /**
@@ -146,15 +149,29 @@ class FormBuilder<T>
             var casted = cast (el, InputElement);
             switch (casted.type)
             {
-                case "text", "date", "time", "datetime", "email", "password", 
-                    "datetime-local", "file", "month", "number", "range", 
+                case "date", "time", "datetime-local":
+                    if (dataFilled)
+                        casted.value = (cast (Reflect.field(data, field), Date)).toString();
+                    
+                    new JQ("#" + field).bind("input", function()
+                    {
+                        Reflect.setField(data, field, casted.value);
+                    });
+
+                case "text", "email", "password", 
+                    "file", "month", "number", "range", 
                     "search", "tel", "url", "week":
+                    if (dataFilled)
+                        casted.value = cast Reflect.field(data, field);
 
                     new JQ("#" + field).bind("input", function()
                     {
                         Reflect.setField(data, field, casted.value);
                     });
                 case "checkbox":
+                    if (dataFilled)
+                        casted.checked = cast Reflect.field(data, field);
+
                     new JQ("#" + field).bind("input", function()
                     {
                         Reflect.setField(data, field, casted.checked);
@@ -164,6 +181,9 @@ class FormBuilder<T>
         else if (Std.is(el, SelectElement))
         {
             var casted = cast (el, SelectElement);
+            if (dataFilled)
+                casted.selectedIndex = cast Reflect.field(data, field);
+
             new JQ("#" + field).on("change", function()
             {
                 Reflect.setField(data, field, casted.selectedIndex);
@@ -172,6 +192,9 @@ class FormBuilder<T>
         else if (Std.is(el, TextAreaElement))
         {
             var casted = cast (el, TextAreaElement);
+            if (dataFilled)
+                casted.value = cast Reflect.field(data, field);
+
             new JQ("#" + field).bind("input", function()
             {
                 Reflect.setField(data, field, casted.value);

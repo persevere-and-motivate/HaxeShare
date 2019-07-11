@@ -1,7 +1,5 @@
 # HaxeShare
-Originally known as OWEL, HaxeShare is a continuation of the OWEL project using Haxe directly without any scripting language jargon. This new project is designed just like OWEL, to simplify the process of building websites, web, REST and client/server applications.
-
-HaxeShare is considered in development, however all the features that exist have been tested on both the client and server in their respective environments.
+HaxeShare is a continuation of the OWEL project - a work-in-progress web development framework with client- and server-side code generation utilities, a Router and form building functionality.
 
 Targets tested:
 
@@ -19,6 +17,34 @@ Targets not tested:
 The `record-macros` dependency only supports MySQL and SQLLite for now. We may develop or contribute to this library in the future to add support for other SQL and NoSQL targets.
 
 If you happen to be testing for any one of the above targets, please let us know in the Issues for tracking.
+
+## Features
+As this project is used in my own projects, it will be expanded to include new features.
+
+The following items have been implemented:
+
+ * Generation of client-side typedef structures representing simple data structures.
+ * Generation of server-side classes extending `sys.db.Object` from the `record-macros` library with typical additional functionality.
+ * Generation of a server-side REST API using generated classes handling specific URLs.
+ * A client-side `Router` class with basic functionality.
+ * A `FormBuilder` with the ability to submit data forms easily.
+
+Essential Features to be added:
+
+ * Server-based router.
+ * Parameterised URLs.
+ * More complex search request capabilities
+ * Allow static form submissions using a typical `<form>` element.
+ * Expand the FormBuilder to also include the ability to generate forms using many procedures.
+ * Add `Security` to allow/deny access to particular pieces of data.
+ * Add and implement additional security layers (OAuth, Two-Factor Authentication).
+
+Beneficial features:
+
+ * Add server-to-client debugging for more effective tracking of issues.
+ * Add auto-generation of Login forms with Session tracking for both AJAX (client) and server.
+ * Add externs for the popular payment gateways (PayPal, Stripe and Square).
+
 
 ## Installation
 Currently, you can clone this project and setup a haxelib `dev` environment like so:
@@ -116,17 +142,7 @@ public static function addType(identifier:String, clientType:ComplexType, server
 ### General Router
 There is now a `Router` class which you can use to define URLs and their respective tasks. It is in early stages and is not recommended to be used in production software yet. However, you may test it out on a development server.
 
-The `Router` class currently has the following features:
-
- * JavaScript hash-based router.
- * Retrieves HTML pages from the server.
- * Retrieves data from the server using the REST API (see the REST-based Server Router below on how to implement).
-
-Features yet to be added:
-
- * Server-based router.
- * Parameterised URLs.
- * More complex search request capabilities
+See the ROADMAP below to see progress and features to be added in future iterations.
 
 To use the router, create a `Router` class.
 You can start adding route URLs and the options for them using the `addRoute` function.
@@ -283,16 +299,62 @@ class Main
 ...
 ```
 
-## Roadmap
-As this project is used in my own projects, it will be expanded to include new features. A router will most likely be the next feature to be implemented, although at first it will be rather restrictive.
+## Form Builder
+A `FormBuilder` class has now been added which allows for easier submission of form data to the server. It currently only supports AJAX requests and requires the use of ID values for picking up elements and their values.
 
-For the router, the following processes will be added:
+Typically, one creates a `FormBuilder` after a HTML page has been received and rendered on-screen. For example,
 
- * Generate a hash-based router for the client-side when using JavaScript. - DONE
- * Generate a web-based URL router for the server-side when using a server language like PHP.
- * Generate a REST-based router for the server-side using GET, POST, PUT and DELETE methods using standard URL notation. - DONE
+```haxe
+router.addRoute("/login/", { page: "pages/login.htm", selector: "#main", proc: function()
+{
+    var builder = new FormBuilder<TLoginData>();
+    // Do some extra things
+}});
+```
 
-In addition, a `FormBuilder` of sorts will also be added to the codebase to simplify form processes for editing data on your website - again, by using customisable templates.
+The `proc` call of the router is executed upon successful retrieval of the `page` parameter, through which we can use to initiate a `FormBuilder` as above.
+
+To begin, we need to call `beginDynamic`, like so:
+
+```haxe
+builder.beginDynamic("#submit", "login");
+```
+
+It is called `beginDynamic` as it is designed for the purposes of a dynamically-loading page rather than pages directly served by the server.
+
+The first parameter is the `id` value of the submit button used to submit the data to the server. The data should be that matching the type we gave at construction as it is a template class.
+
+The second parameter is the defined structure at compile-time. For example, "login" would refer to a database object as seen in the section above, with the call `Builder.addRestRoute`.
+
+Next, we can start defining which elements match which fields in our data:
+
+```haxe
+builder.fieldSync("title");
+builder.fieldSync("description");
+```
+
+The `fieldSync` call takes a single identifier, which matches the `id` value of an element and handles the change event to update the respective field in the `data` field. If the data has already been filled, either by passing a `data` object to the constructor or by passing `true` in the fourth optional parameter of `beginDynamic`, the elements will be set with any values that already exist within that instance.
+
+At each stage of the submission, we can verify validation and handle anything after we submit or request a deletion using callback functions.
+
+The `onValidate` function is useful for validating data before submitting the data to the server.
+
+```haxe
+builder.onValidate = function(data)
+{
+    if (data.title == "")
+    {
+        trace("`title` must have a value.");
+        return false;
+    }
+
+    return true;
+};
+```
+
+We can do anything with our data at this point, as well as change any existing data. By returning `true`, we tell the builder to submit the data. Returning `false` will stop submission.
+
+There are also `onSubmit` and `onDelete` functions which do not take any arguments and does not return anything, but can be useful if you wish to do anything with UI after any one of these are called, like for example removing an element when `onDelete` is called.
 
 ## License
 We use the MIT License.
