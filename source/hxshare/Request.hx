@@ -59,10 +59,12 @@ class Request
     /**
     * Requests from the server an object based on a REST url that can be displayed.
     * @param url The RESTful notation url request.
-    * @param cb The callback with a string of the return resource and a boolean determining if the request was successful.
+    * @param cb The callback with a string of the return resource and a boolean determining if the request was successful. 
     * If the request returns `false`, the string value is an error message.
+    * @param data (Optional) If you send data with the request, the request will be a POST instead of a GET and this will be sent
+    * to the server as the search parameters.
     **/
-    public static function get(url:String, cb:String -> Bool -> Void)
+    public static function get(url:String, cb:String -> Bool -> Void, ?data:Dynamic = null)
     {
         var request = new XMLHttpRequest();
         request.onreadystatechange = function() {
@@ -74,8 +76,17 @@ class Request
                     cb(request.responseText, true);
             }
         };
-        request.open("GET", "includes/index.php?page=" + url);
-        request.send();
+        if (data != null)
+        {
+            request.open("POST", "includes/index.php?page=" + url);
+            request.setRequestHeader("Content-Type", "application/json");
+            request.send(data);
+        }
+        else
+        {
+            request.open("GET", "includes/index.php?page=" + url);
+            request.send();
+        }
     }
 
     /**

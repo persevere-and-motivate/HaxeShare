@@ -97,52 +97,125 @@ class Builder
             for (struct in _structures)
             {
                 var classType = macro $i{struct.name};
+                var searchableField = "";
 
-                caseValues.push(macro
+                for (f in struct.fields)
                 {
-                    if (routes[0] == $v{struct.restRootURL})
+                    if (f.searchable)
                     {
-                        if (method != "GET")
+                        searchableField = f.identifier;
+                        break;
+                    }
+                }
+
+                var caseExpr:Expr = null;
+
+                if (searchableField != "")
+                {
+                    var searchable:Expr = {
+                        expr: EObjectDecl([{ field: searchableField, expr: macro routes[2] }]),
+                        pos: Context.currentPos()
+                    };
+
+                    caseExpr = macro
+                    {
+                        if (routes[0] == $v{struct.restRootURL})
                         {
-                            if (routes.length == 1)
+                            if (method != "GET")
                             {
-                                Lib.print(Json.stringify($classType.modify(method)));
-                            }
-                            else if (routes.length == 2)
-                            {
-                                var id = Std.parseInt(routes[1]);
-                                Lib.print(Json.stringify($classType.modify(method, id)));
-                            }
-                            else
-                            {
-                                Web.setReturnCode(500);
-                                Lib.print("Method '" + method + "' is used for the URL route '" + routes[0] + "' but no `id` was given.");
-                            }
-                        }
-                        else
-                        {
-                            if (routes.length >= 2)
-                            {
-                                if (routes[1] == "all")
+                                if (routes.length == 1)
                                 {
-                                    Lib.print(Json.stringify($classType.all()));
+                                    Lib.print(Json.stringify($classType.modify(method)));
                                 }
-                                else if (routes[1] == "search")
+                                else if (routes.length == 2)
                                 {
-                                    Lib.print(Json.stringify($classType.search(routes[2])));
+                                    if (routes[2] == "search")
+                                    {
+                                        var value = sys.io.File.getContent("php://input");
+                                        var data = Json.parse(value);
+                                        Lib.print(Json.stringify($classType.search(data)));
+                                    }
+
+                                    var id = Std.parseInt(routes[1]);
+                                    Lib.print(Json.stringify($classType.modify(method, id)));
                                 }
                                 else
                                 {
-                                    var id = Std.parseInt(routes[1]);
-                                    if (id != null)
+                                    Web.setReturnCode(500);
+                                    Lib.print("Method '" + method + "' is used for the URL route '" + routes[0] + "' but no `id` was given.");
+                                }
+                            }
+                            else
+                            {
+                                if (routes.length >= 2)
+                                {
+                                    if (routes[1] == "all")
                                     {
-                                        Lib.print(Json.stringify($classType.modify("GET", id)));
+                                        Lib.print(Json.stringify($classType.all()));
+                                    }
+                                    else if (routes[1] == "search")
+                                    {
+                                        Lib.print(Json.stringify($classType.search($e{searchable})));
+                                    }
+                                    else
+                                    {
+                                        var id = Std.parseInt(routes[1]);
+                                        if (id != null)
+                                        {
+                                            Lib.print(Json.stringify($classType.modify("GET", id)));
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                });
+                    };
+                }
+                else
+                {
+                    caseExpr = macro
+                    {
+                        if (routes[0] == $v{struct.restRootURL})
+                        {
+                            if (method != "GET")
+                            {
+                                if (routes.length == 1)
+                                {
+                                    Lib.print(Json.stringify($classType.modify(method)));
+                                }
+                                else if (routes.length == 2)
+                                {
+                                    var id = Std.parseInt(routes[1]);
+                                    Lib.print(Json.stringify($classType.modify(method, id)));
+                                }
+                                else
+                                {
+                                    Web.setReturnCode(500);
+                                    Lib.print("Method '" + method + "' is used for the URL route '" + routes[0] + "' but no `id` was given.");
+                                }
+                            }
+                            else
+                            {
+                                if (routes.length >= 2)
+                                {
+                                    if (routes[1] == "all")
+                                    {
+                                        Lib.print(Json.stringify($classType.all()));
+                                    }
+                                    else
+                                    {
+                                        var id = Std.parseInt(routes[1]);
+                                        if (id != null)
+                                        {
+                                            Lib.print(Json.stringify($classType.modify("GET", id)));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    };
+                }
+
+                caseValues.push(caseExpr);
             }
 
             var routerBody = macro {
@@ -464,10 +537,8 @@ class Builder
         {
             if (searchableFields.length > 0)
             {
-                var searchable = "$" + searchableFields[0];
-
                 var searchBody = macro {
-                    var items = manager.search($i{searchable}.like(value));
+                    var items = manager.dynamicSearch(value);
                     var results = [];
                     for (item in items)
                         results.push(item.toTypedef());
@@ -478,7 +549,7 @@ class Builder
                     args: [
                         {
                             name: "value",
-                            type: macro :String
+                            type: macro :Dynamic
                         }
                     ],
                     expr: searchBody,
