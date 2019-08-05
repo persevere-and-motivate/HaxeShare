@@ -28,11 +28,10 @@ The following items have been implemented:
  * Generation of a server-side REST API using generated classes handling specific URLs.
  * A client-side `Router` class with basic functionality.
  * A `FormBuilder` with the ability to submit data forms easily.
+ * Server-based router.
 
 Essential Features to be added:
 
- * Server-based router.
- * Parameterised URLs.
  * More complex search request capabilities
  * Allow static form submissions using a typical `<form>` element.
  * Expand the FormBuilder to also include the ability to generate forms using many procedures.
@@ -147,8 +146,6 @@ public static function addType(identifier:String, clientType:ComplexType, server
 The `Router` class has been changed to suit a more appropriate switch/if pattern style for performance reasons. This approach is also simpler and easier to read.
 
 This new `Router` includes very simple functionality for both the client and server and is now completely platform independent.
-
-
 
 ### REST-based Server Router
 The REST-based server router generates code using basic RESTful notation. It detects the HTTP Method, checks the url passed into the `page` parameter (as used in the `Request` class) and then uses generated database objects to retrieve or `modify()` data.
