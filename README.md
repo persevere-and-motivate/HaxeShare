@@ -119,10 +119,14 @@ As mentioned above, you can specify a type in the `Builder.addField()` function 
 |----------:|:-----------:|:-----------------------|
 | id        | Int         | sys.db.Types.SId       |
 | shorttext | String      | sys.db.Types.STinyText |
+| text      | String      | sys.db.Types.SSmallText|
 | longtext  | String      | sys.db.Types.SText     |
 | bool      | Bool        | sys.db.Types.SBool     |
 | int       | Int         | sys.db.Types.SInt      |
 | float     | Float       | sys.db.Types.SFloat    |
+| date      | Date        | sys.db.Types.SDate     |
+| time      | Date        | sys.db.Types.STimeStamp|
+| datetime  | Date        | sys.db.Types.SDateTime |
 
 You can add your own custom types using the `Builder.addType()` function call.
 
@@ -140,92 +144,11 @@ public static function addType(identifier:String, clientType:ComplexType, server
 ## Router
 
 ### General Router
-There is now a `Router` class which you can use to define URLs and their respective tasks. It is in early stages and is not recommended to be used in production software yet. However, you may test it out on a development server.
+The `Router` class has been changed to suit a more appropriate switch/if pattern style for performance reasons. This approach is also simpler and easier to read.
 
-See the ROADMAP below to see progress and features to be added in future iterations.
+This new `Router` includes very simple functionality for both the client and server and is now completely platform independent.
 
-To use the router, create a `Router` class.
-You can start adding route URLs and the options for them using the `addRoute` function.
 
-A basic client-side example:
-
-```haxe
-var router = new Router();
-router.addRoute("/", { page: "index.htm", selector: "#content" });
-```
-
-This will create a route using a single "/" specifying the home page. This will request the page `index.htm` and display the results inside the HTML element with the id `content`.
-
-Let's add another:
-
-```haxe
-router.addRoute("/about/", { page: "about.htm", selector: "#inner-content", dependsOn: 0 });
-```
-
-Here, we say we are depending on index `0`, which is the first route we added. `addRoute()` returns an index value for that route, which means we can refer to it later for this very purpose.
-
-What happens here is that before the `about` page is displayed, everything related to the home page will execute, then the `about` route will be executed.
-
-Let's get more sophisticated:
-
-```haxe
-router.addRoute("/products/", { page: "products.htm", selector: "#inner-content", dependsOn: 0,
-    withRequest: [
-        {
-            restURL: "product/all",
-            method: "GET",
-            eachTemplate: "<li>%title%</li>",
-            replace: "%products%"
-        }
-    ]
-});
-```
-
-We now start using `withRequest`, which is an optional array parameter that takes up to five extra parameters:
-
-```haxe
-typedef RouteRequest = 
-{
-    /**
-    * The RESTful url value to use for the request.
-    **/
-    var restURL:String;
-    /**
-    * The HTTP Method to use for the request.
-    **/
-    var method:String;
-    /**
-    * If using PUT, POST, or GET for a complex search, the data to send to the server.
-    **/
-    @:optional var data:Dynamic;
-    /**
-    * The HTML template value to use if the expected result of the request is an array.
-    **/
-    @:optional var eachTemplate:String;
-    /**
-    * Just as in `Request.templatise()`, this is the unique value in the body HTML to replace
-    * with the parsed template results before rendering.
-    **/
-    @:optional var replace:String;
-}
-```
-
-Taking the above example, the following will happen:
-
- 1. We obtain the contents of `products.htm`.
- 2. We then initiate a resource request to the server using the URL `product/all` with the HTTP Method `GET`. Following the information in the section titled "REST-based Server Router", we obtain *all* the available products without limits.
- 3. Then, in *each* value we retrieve, we parse the value `eachTemplate` and replace `%title%` with the actual title string of the product we get.
- 4. Finally, inside the contents of `products.htm` should be a value identified as `%products%` - replace it with the parsed results.
-
-On the client-side, this is done using AJAX while on the server it uses server resources to complete this task (however, the server functionality in the Router is not yet available).
-
-Also be warned that only one item in `withRequest` is accepted. This may be changed into an actual object as making multiple AJAX requests on a single page load is potentially slow. When complex searching becomes available, it is likely this will become the case. More examples involving complex searching will also be available at the relevant times.
-
-Make sure as you finish up with your router to `execute()` like so:
-
-```haxe
-router.execute();
-```
 
 ### REST-based Server Router
 The REST-based server router generates code using basic RESTful notation. It detects the HTTP Method, checks the url passed into the `page` parameter (as used in the `Request` class) and then uses generated database objects to retrieve or `modify()` data.

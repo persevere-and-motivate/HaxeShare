@@ -29,6 +29,7 @@ class Builder
 
         addType("id", macro :Int, macro :sys.db.Types.SId);
         addType("shorttext", macro :String, macro :sys.db.Types.STinyText);
+        addType("text", macro :String, macro :sys.db.Types.SSmallText);
         addType("longtext", macro :String, macro :sys.db.Types.SText);
         addType("bool", macro :Bool, macro :sys.db.Types.SBool);
         addType("int", macro :Int, macro :sys.db.Types.SInt);
@@ -135,9 +136,11 @@ class Builder
                                         var data = Json.parse(value);
                                         Lib.print(Json.stringify($classType.search(data)));
                                     }
-
-                                    var id = Std.parseInt(routes[1]);
-                                    Lib.print(Json.stringify($classType.modify(method, id)));
+                                    else
+                                    {
+                                        var id = Std.parseInt(routes[1]);
+                                        Lib.print(Json.stringify($classType.modify(method, id)));
+                                    }
                                 }
                                 else
                                 {
@@ -219,9 +222,7 @@ class Builder
             }
 
             var routerBody = macro {
-                var page = php.Web.getParams().get("page");
                 var routes = page.split("/");
-                var method = php.Web.getMethod();
 
                 if (routes.length > 0)
                 {
@@ -230,7 +231,14 @@ class Builder
             };
 
             var routerFunction:Function = {
-                args: [],
+                args: [{
+                    name: "page",
+                    type: macro :String
+                },
+                {
+                    name: "method",
+                    type: macro :String
+                }],
                 expr: routerBody,
                 ret: null
             };
@@ -305,12 +313,7 @@ class Builder
                     kind: FVar(type),
                     pos: Context.currentPos(),
                     name: f.identifier,
-                    meta: [
-                        {
-                            name: ":optional",
-                            pos: Context.currentPos()
-                        }
-                    ]
+                    access: [APublic]
                 });
 
                 sharedTypeMembers.push(f.identifier);

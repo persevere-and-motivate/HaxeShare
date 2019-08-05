@@ -68,13 +68,15 @@ class FormBuilder<T>
                 }
                 else
                 {
-                    throw content;
+                    trace(content);
+                    return;
                 }
             });
         }
         else if (editing && !dataFilled)
         {
-            throw "You must give an ID value if you are editing an item.";
+            trace("You must give an ID value if you are editing an item.");
+            return;
         }
 
         new JQ(submitSelector).click(function(e)
