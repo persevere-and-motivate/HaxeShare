@@ -18,6 +18,9 @@ class Builder
     static var _structures:Array<Structure>;
     static var _currentStructure:Int = -1;
 
+    /**
+    * Initialise the Builder.
+    **/
     public static function init()
     {
         _structures = [];
@@ -38,6 +41,12 @@ class Builder
         addType("datetime", macro :String, macro :sys.db.Types.SDateTime);
     }
 
+    /**
+    * Add a Type that can be used as the common identifier for both the client and server.
+    * @param identifier The name of the type.
+    * @param clientType A `ComplexType` representing what should be generated when this type is resolved on the client-side.
+    * @param serverType A `ComplexType` representing what should be generated when this type is resolved on the server-side.
+    **/
     public static function addType(identifier:String, clientType:ComplexType, serverType:ComplexType)
     {
         _types.push(identifier);
@@ -45,6 +54,11 @@ class Builder
         _serverTypes.push(serverType);
     }
 
+    /**
+    * Create a new structure that defines either a class or typedef depending on output target.
+    * @param name The name to give to the structure. Typedef's are generated prefixed with "T" in the `shared` package, 
+    * while the generated class will keep the given name and will be placed in the `data` package.
+    **/
     public static function beginStructure(name:String)
     {
         var structure = new Structure();
@@ -53,8 +67,18 @@ class Builder
         _currentStructure++;
     }
 
+    /**
+    * Add a field to a structure. Must be called after `beginStructure` is called.
+    * @param typeName This is the named type, such as when `addType` is called to define a specific type.
+    * @param identifier The name of the field when generated.
+    * @param displayName (Optional) If generating a form, the `displayName` is used to identify the form field against this field.
+    * @param searchable (Optional) Determines if this field is searchable. Generates the `search()` function of the structure on the server.
+    **/
     public static function addField(typeName:String, identifier:String, ?displayName:String = "", ?searchable:Bool = false)
     {
+        if (_currentStructure == -1)
+            return;
+
         var field = new CField();
         field.typeName = typeName;
         field.identifier = identifier;
@@ -63,11 +87,19 @@ class Builder
         _structures[_currentStructure].fields.push(field);
     }
 
+    /**
+    * Defines the root name for this structure when accessing it via a REST API.
+    *
+    * @param rootURL The root name for this structure.
+    **/
     public static function addRestRoute(rootURL:String)
     {
         _structures[_currentStructure].restRootURL = rootURL;
     }
 
+    /**
+    * Usually called at macro-initialisation time, this will build and generate code respective of the target language.
+    **/
     public static function build()
     {
         buildShared();
@@ -84,6 +116,13 @@ class Builder
 // Begin Generated Code
 //
 
+    /**
+    * Usually called against a class using `@:build`, this will generate a static `router()` function.
+    * The router function generated takes two parameters:
+    *
+    *   `url` is a string, which is the URL given in RESTful notation.
+    *   `method` is the HTTP method retrieved.
+    **/
     public static macro function generateServerREST():Array<Field>
     {
         var fields = Context.getBuildFields();
@@ -444,6 +483,10 @@ class Builder
         return null;
     }
 
+    /**
+    * Not to be used directly. This is auto-assigned to generated `sys.db.Object` classes to complete
+    * generation of the class.
+    **/
     public static macro function finish(searchableFields:Array<String>):Array<Field>
     {
         var fields = Context.getBuildFields();
