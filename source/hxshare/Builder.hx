@@ -1,7 +1,6 @@
 package hxshare;
 #if macro
 
-import haxe.macro.Type;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 
@@ -34,9 +33,9 @@ class Builder
         addType("bool", macro :Bool, macro :sys.db.Types.SBool);
         addType("int", macro :Int, macro :sys.db.Types.SInt);
         addType("float", macro :Float, macro :sys.db.Types.SFloat);
-        addType("date", macro :Date, macro :sys.db.Types.SDate);
+        addType("date", macro :String, macro :sys.db.Types.SDate);
         addType("time", macro :Date, macro :sys.db.Types.STimeStamp);
-        addType("datetime", macro :Date, macro :sys.db.Types.SDateTime);
+        addType("datetime", macro :String, macro :sys.db.Types.SDateTime);
     }
 
     public static function addType(identifier:String, clientType:ComplexType, serverType:ComplexType)
@@ -332,11 +331,41 @@ class Builder
                 for (i in 0...sharedTypeMembers.length)
                 {
                     var mName:String = sharedTypeMembers[i];
+                    var kind = typeFields[i].kind;
+                    var type:ComplexType = null;
 
                     var e = {
                         expr: EField(macro this, mName),
                         pos: Context.currentPos()
                     };
+
+                    switch (kind)
+                    {
+                        case FVar(_t):
+                            var resolved = Context.resolveType(_t, Context.currentPos());
+                            switch (resolved)
+                            {
+                                case TType(t,_):
+                                    if (t.get().name == "SDateTime" || t.get().name == "SDate")
+                                    {
+                                        e = 
+                                        {
+                                            expr: ECall(
+                                            {
+                                                expr: EField(
+                                                {
+                                                    expr: EField(macro this, mName),
+                                                    pos: Context.currentPos()
+                                                }, "toString"),
+                                                pos: Context.currentPos()
+                                            }, []),
+                                            pos: Context.currentPos()
+                                        };
+                                    }
+                                default:
+                            }
+                        default:
+                    }
 
                     assigns.push({
                         field: mName,
