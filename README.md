@@ -234,8 +234,6 @@ Request.getPage("pages/login.htm", function(success, content)
 });
 ```
 
-The `proc` call of the router is executed upon successful retrieval of the `page` parameter, through which we can use to initiate a `FormBuilder` as above.
-
 To begin, we need to call `beginDynamic`, like so:
 
 ```haxe
