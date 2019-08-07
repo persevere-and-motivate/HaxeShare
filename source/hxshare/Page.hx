@@ -1,10 +1,16 @@
 package hxshare;
-#if php
 
 import sys.io.File;
 
+#if php
 import php.Syntax;
 import php.Lib;
+#end
+
+#if js
+import js.html.Element;
+import js.Browser;
+#end
 
 using StringTools;
 
@@ -18,6 +24,10 @@ class Page
     private var _root:String;
     private var _result:String;
 
+    #if js
+    private var _parent:Element;
+    #end
+
     /**
     * A series of key-value pairs. It is recommended to use
     * this for setting default values before any parsing is handled.
@@ -26,12 +36,20 @@ class Page
 
     /**
     * Create a new `Page` useful for manipulating HTML before printing.
+    *
+    * @param id (JS-Only) The id of the element the generated HTML should be contained in.
     **/
-    public function new()
+    public function new(?id:String = "")
     {
         _result = "";
 
+        #if php
         _root = Syntax.code("$_SERVER['DOCUMENT_ROOT']") + "/";
+        #end
+
+        #if js
+        _parent = Browser.document.getElementById(id);
+        #end
         fields = new Map<String, String>();
     }
 
@@ -99,7 +117,17 @@ class Page
     **/
     public function getFile(file:String)
     {
+        #if sys
         _result += File.getContent(_root + file);
+        #else
+        Request.getPage(file, function(success, content)
+        {
+            if (success)
+            {
+                _result += content;
+            }
+        });
+        #end
     }
 
     /**
@@ -147,6 +175,7 @@ class Page
     **/
     public function notfound()
     {
+        #if php
         _result = "";
         _result += File.getContent(_root + _headerFile);
         _result += File.getContent(_root + _notFoundFile);
@@ -154,7 +183,34 @@ class Page
 
         parseDefaults();
 
-        Lib.print(_result);
+        _print(_result);
+        #else
+        Request.getPage(_headerFile, function(success, content)
+        {
+            if (success)
+            {
+                _result += content;
+                Request.getPage(_notFoundFile, function(success1, content1)
+                {
+                    if (success1)
+                    {
+                        _result += content1;
+                        Request.getPage(_footerFile, function(success2, content2)
+                        {
+                            if (success2)
+                            {
+                                _result += content2;
+
+                                parseDefaults();
+
+                                _print(_result);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        #end
     }
 
     /**
@@ -162,7 +218,7 @@ class Page
     **/
     public function print()
     {
-        Lib.print(_result);
+        _print(_result);
     }
 
     /**
@@ -172,6 +228,30 @@ class Page
     public function generateTestFile()
     {
         File.saveContent(_root + "test.htm", _result);
+    }
+
+#if js
+
+    /**
+    * Dynamically set the title of the document.
+    *
+    * @param value The new title to set to the document.
+    **/
+    public function setDocumentTitle(value:String)
+    {
+        Browser.document.title = value;
+    }
+
+#end
+
+
+    private function _print(value:String)
+    {
+        #if sys
+        Lib.print(value);
+        #else
+        _parent.innerHTML = value;
+        #end
     }
 
 }

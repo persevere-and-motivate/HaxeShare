@@ -33,7 +33,6 @@ The following items have been implemented:
 
 Essential Features to be added:
 
- * More complex search request capabilities
  * Allow static form submissions using a typical `<form>` element.
  * Expand the FormBuilder to also include the ability to generate forms using many procedures.
  * Add `Security` to allow/deny access to particular pieces of data.
