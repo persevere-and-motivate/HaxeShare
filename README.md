@@ -29,6 +29,7 @@ The following items have been implemented:
  * A client-side `Router` class with basic functionality.
  * A `FormBuilder` with the ability to submit data forms easily.
  * Server-based router.
+ * Added OAuth on the PHP target (just externs for now. Currently untested).
 
 Essential Features to be added:
 
@@ -36,7 +37,6 @@ Essential Features to be added:
  * Allow static form submissions using a typical `<form>` element.
  * Expand the FormBuilder to also include the ability to generate forms using many procedures.
  * Add `Security` to allow/deny access to particular pieces of data.
- * Add and implement additional security layers (OAuth, Two-Factor Authentication).
 
 Beneficial features:
 
@@ -225,11 +225,14 @@ A `FormBuilder` class has now been added which allows for easier submission of f
 Typically, one creates a `FormBuilder` after a HTML page has been received and rendered on-screen. For example,
 
 ```haxe
-router.addRoute("/login/", { page: "pages/login.htm", selector: "#main", proc: function()
+Request.getPage("pages/login.htm", function(success, content)
 {
-    var builder = new FormBuilder<TLoginData>();
-    // Do some extra things
-}});
+    if (success)
+    {
+         var builder = new FormBuilder<TLoginData>();
+        // Do some extra things
+    }
+});
 ```
 
 The `proc` call of the router is executed upon successful retrieval of the `page` parameter, through which we can use to initiate a `FormBuilder` as above.

@@ -1,4 +1,7 @@
 package php;
+#if !php
+#error "You must target PHP to access the php.OAuthProvider class."
+#end
 
 /**
 * Documentation for this class has been retrieved from:

@@ -1,4 +1,7 @@
 package php;
+#if !php
+#error "You must target PHP to use the php.OAuth class."
+#end
 
 /**
 * Documentation for this class has been retrieved from:
