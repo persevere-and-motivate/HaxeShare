@@ -3,9 +3,13 @@ package hxshare.db;
 class DBObject
 {
 
+    private var _fields:Map<Int, String>;
+
+    public function getFields() return _fields;
+
     public function new()
     {
-
+        _fields = new Map<Int, String>();
     }
 
     /**
@@ -35,12 +39,10 @@ class DBObject
     /**
     * Retrieve all the items from the database relating to this object.
     **/
-    public static function all(object:DBObject)
+    public static function all()
     {
-        var tName = Type.getClassName(object);
-        tName = tName.substr(tName.lastIndexOf(".") + 1);
-        var results = Connection.instance.select(tName);
-        
+        var results = Connection.instance.select(new DBObject());
+        return results;
     }
 
 }

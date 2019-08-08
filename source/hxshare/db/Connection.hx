@@ -33,7 +33,7 @@ class Connection
     /**
     * Connects to the database using the following queries.
     **/
-    public function connect(host:String, user:String, pass:String, ?database:String, ?port:Int, ?socket:String)
+    public function connect(host:String, user:String, pass:String, database:String, ?port:Int, ?socket:String)
     {
         switch (_vendor)
         {
@@ -77,13 +77,14 @@ class Connection
     /**
     * Retrieves a series of rows from the database.
     **/
-    public function select(table:String, ?filter:Map<String, String>, ?options:Dynamic):Array<DBObject>
+    public function select<T>(object:T, ?filter:Map<String, String>, ?options:Dynamic):Array<T>
     {
         switch (_vendor)
         {
             case VENDOR_MYSQL:
-                return Mysql.select(table, filter, options);
+                return Mysql.select(object, filter, options);
             default:
+                return null;
         }
     }
 
