@@ -43,6 +43,7 @@ Beneficial features:
  * Add auto-generation of Login forms with Session tracking for both AJAX (client) and server.
  * Add externs for the popular payment gateways (PayPal, Stripe and Square).
 
+See the [Roadmap](/Roadmap.md) for more details.
 
 ## Installation
 Currently, you can clone this project and setup a haxelib `dev` environment like so:
