@@ -47,7 +47,7 @@ class Mysql
         #end
     }
 
-    public static function select<T>(object:T, ?filter:Map<String, String>, ?options:Dynamic):Array<T>
+    public static function select<T>(object:T, ?filter:Map<String, Dynamic>, ?options:Dynamic):Array<T>
     {
         var table = '';
         var cls = Type.getClass(object);
@@ -56,6 +56,7 @@ class Mysql
 
         var results = new Array<T>();
         var query = '';
+        var bindings = [];
 
         query = 'SELECT * FROM `$table`';
         if (filter != null)
@@ -68,6 +69,7 @@ class Mysql
                     if (Reflect.hasField(object, k))
                     {
                         query += '$k = :$k ';
+                        bindings.push(k);
                     }
                 }
             }
@@ -111,7 +113,12 @@ class Mysql
 
         #if php
         var stmt = _dbConn.prepare(query, Lib.toPhpArray([]));
-        stmt.execute(Lib.toPhpArray([]));
+        for (b in bindings)
+        {
+            var value = filter[b];
+            stmt.bindParam(b, value);
+        }
+        Syntax.code("$stmt->execute()");
 
         var queryResults = stmt.setFetchMode(PDO.FETCH_ASSOC);
         for (k => v in stmt.fetchAll().keyValueIterator())

@@ -2,10 +2,10 @@ package;
 
 import hxshare.db.DBObject;
 
-@:build(hxshare.db.macros.Builder.build())
 class TestObject extends DBObject
 {
 
+    @primary
     public var id:Int;
     
     public var name:String;

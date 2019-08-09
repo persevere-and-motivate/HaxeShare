@@ -77,7 +77,7 @@ class Connection
     /**
     * Retrieves a series of rows from the database.
     **/
-    public function select<T>(object:T, ?filter:Map<String, String>, ?options:Dynamic):Array<T>
+    public function select<T>(object:T, ?filter:Map<String, Dynamic>, ?options:Dynamic):Array<T>
     {
         switch (_vendor)
         {

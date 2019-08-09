@@ -21,19 +21,40 @@ class Builder
 
         var _fieldSetters = [];
         var index = 0;
+        var idFieldName = "";
 
         for (field in fields)
         {
             switch (field.kind)
             {
-                case FVar(_,_):
-                    if (hasPublicAccess(field))
+                case FVar(t,_):
+                    for (meta in field.meta)
                     {
-                        _fieldSetters.push(macro { _fields.set($v{index++}, $v{field.name}); });
+                        if (meta.name == "primary")
+                        {
+                            switch (t)
+                            {
+                                case TPath(p):
+                                    if (p.name == "Int" || p.name == "UInt")
+                                    {
+                                        idFieldName = field.name;
+                                    }
+                                    else
+                                    {
+                                        Context.error("@primary can only be assigned to a field of type `Int` or `UInt`.", Context.currentPos());
+                                    }
+                                default:
+                            }
+                        }
                     }
                 default:
 
             }
+        }
+
+        if (idFieldName == "")
+        {
+            Context.error("You must have a @primary meta on at least one field of type `Int` or `UInt`.", Context.currentPos());
         }
 
         switch (__constructor.kind)
@@ -41,22 +62,12 @@ class Builder
             case FFun(fun): fun.expr = macro {
                 super();
 
-                $a{_fieldSetters};
+                _idField = $v{idFieldName};
             };
             default:
         }
 
         return fields;
-    }
-
-    static function hasPublicAccess(field:Field)
-    {
-        for (access in field.access)
-        {
-            if (access == APublic)
-                return true;
-        }
-        return false;
     }
 
 }
