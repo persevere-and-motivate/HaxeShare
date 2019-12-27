@@ -10,7 +10,8 @@ class Builder
     public static macro function build():Array<Field>
     {
         var fields = Context.getBuildFields();
-
+        var cls = Context.getLocalClass();
+        var clsComplex = Context.toComplexType(TInst(cls, []));
 
         var __constructor:Field = null;
         for (field in fields)
@@ -30,7 +31,7 @@ class Builder
                 case FVar(t,_):
                     for (meta in field.meta)
                     {
-                        if (meta.name == "primary")
+                        if (meta.name == ":primaryKey")
                         {
                             switch (t)
                             {
@@ -41,7 +42,7 @@ class Builder
                                     }
                                     else
                                     {
-                                        Context.error("@primary can only be assigned to a field of type `Int` or `UInt`.", Context.currentPos());
+                                        Context.error("@:primaryKey can only be assigned to a field of type `Int` or `UInt`.", Context.currentPos());
                                     }
                                 default:
                             }
@@ -54,7 +55,7 @@ class Builder
 
         if (idFieldName == "")
         {
-            Context.error("You must have a @primary meta on at least one field of type `Int` or `UInt`.", Context.currentPos());
+            Context.error("You must have a @:primaryKey meta on at least one field of type `Int` or `UInt`.", Context.currentPos());
         }
 
         switch (__constructor.kind)
@@ -65,6 +66,81 @@ class Builder
                 _idField = $v{idFieldName};
             };
             default:
+        }
+
+        var instanceFields = [];
+        function hasPublicAccess(access:Array<Access>)
+        {
+            for (a in access)
+                if (a == APublic)
+                    return true;
+            
+            return false;
+        }
+
+        for (f in fields)
+        {
+            switch (f.kind)
+            {
+                case FVar(t, _):
+                    if (hasPublicAccess(f.access))
+                    {
+                        instanceFields.push(f);
+                    }
+                default:
+            }
+        }
+
+
+        /**
+        * The `clone()` function.
+        **/
+        {
+            var instancePath:TypePath = {
+                name: cls.get().name,
+                pack: cls.get().pack
+            };
+
+            var memberAssigns = [];
+            for (f in instanceFields)
+            {
+                var fName = f.name;
+                var ignore = false;
+                for (meta in f.meta)
+                {
+                    if (meta.name == ":primaryKey")
+                    {
+                        ignore = true;
+                        break;
+                    }
+                }
+
+                if (ignore)
+                    continue;
+
+                memberAssigns.push(macro { instance.$fName = this.$fName; });
+            }
+
+            var cloneBody = macro {
+                var instance = new $instancePath();
+                $a{memberAssigns};
+                return instance;
+            };
+
+            var cloneFunction:Function = {
+                expr: cloneBody,
+                ret: clsComplex,
+                args: []
+            };
+
+            var cloneField:Field = {
+                name: "clone",
+                kind: FFun(cloneFunction),
+                access: [APublic],
+                pos: Context.currentPos()
+            };
+
+            fields.push(cloneField);
         }
 
         return fields;
