@@ -63,4 +63,20 @@ class Router
         return routes == _routes.length;
     }
 
+    /**
+    * Gets the rest of the route from the current route index as a URL.
+    **/
+    public static function remainder()
+    {
+        var result = "";
+        for (i in _routeIndex..._routes.length)
+        {
+            result += _routes[i] + "/";
+        }
+
+        result = result.substr(0, result.length - 1);
+
+        return result;
+    }
+
 }
