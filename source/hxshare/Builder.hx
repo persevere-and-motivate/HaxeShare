@@ -1,4 +1,5 @@
 package hxshare;
+import haxe.rtti.CType.MetaData;
 #if macro
 
 import haxe.macro.Context;
@@ -71,16 +72,18 @@ class Builder
     * Add a field to a structure. Must be called after `beginStructure` is called.
     * @param typeName This is the named type, such as when `addType` is called to define a specific type.
     * @param identifier The name of the field when generated.
+    * @param isPrimary If true, marks the field as an @:id in the database class when generated on the server.
     * @param displayName (Optional) If generating a form, the `displayName` is used to identify the form field against this field.
     * @param searchable (Optional) Determines if this field is searchable. Generates the `search()` function of the structure on the server.
     **/
-    public static function addField(typeName:String, identifier:String, ?displayName:String = "", ?searchable:Bool = false)
+    public static function addField(typeName:String, identifier:String, ?isPrimary:Bool, ?displayName:String = "", ?searchable:Bool = false)
     {
         if (_currentStructure == -1)
             return;
 
         var field = new CField();
         field.typeName = typeName;
+        field.isPrimary = isPrimary;
         field.identifier = identifier;
         field.searchable = searchable;
         field.displayName = displayName;
@@ -335,6 +338,8 @@ class Builder
 
     static function buildServer()
     {
+        var primaryField = "";
+
         for (struct in _structures)
         {
             var typeFields = [];
@@ -347,11 +352,16 @@ class Builder
                 if (type == null)
                     Context.error('`${f.typeName}` type not found.', Context.currentPos());
 
+                if (f.isPrimary)
+                {
+                    primaryField = f.identifier;
+                }
+
                 typeFields.push({
                     kind: FVar(type),
                     pos: Context.currentPos(),
                     name: f.identifier,
-                    access: [APublic]
+                    access: [APublic],
                 });
 
                 sharedTypeMembers.push(f.identifier);
@@ -435,6 +445,26 @@ class Builder
                 typeFields.push(toTypedefField);
             }
 
+            var metaData = new Array<MetadataEntry>();
+            if (primaryField != "")
+            {
+                metaData.push({
+                    name: ":id",
+                    pos: Context.currentPos(),
+                    params: [
+                        macro $i{primaryField}
+                    ]
+                });
+            }
+
+            metaData.push({
+                name: ":build",
+                pos: Context.currentPos(),
+                params: [
+                    macro hxshare.Builder.finish($v{searchableFields})
+                ]
+            });
+            
             var def:TypeDefinition = {
                 fields: typeFields,
                 kind: TDClass({
@@ -444,15 +474,7 @@ class Builder
                 name: struct.name,
                 pack: [ "data" ],
                 pos: Context.currentPos(),
-                meta: [
-                    {
-                        name: ":build",
-                        pos: Context.currentPos(),
-                        params: [
-                            macro hxshare.Builder.finish($v{searchableFields})
-                        ]
-                    }
-                ]
+                meta: metaData
             };
 
             Context.defineType(def);
