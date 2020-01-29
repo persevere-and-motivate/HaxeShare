@@ -558,14 +558,45 @@ class Builder
             };
            
             var modifyBody = macro {
-                if (method == "GET" && id > -1)
+                if (method == "GET")
                 {
-                    return manager.get(id).toTypedef();
+                    if (Std.is(id, String))
+                    {
+                        if (id != "")
+                            return manager.get(id).toTypedef();
+                        else
+                            return null;
+                    }
+                    else if (Std.is(id, Int))
+                    {
+                        if (id > -1)
+                            return manager.get(id).toTypedef();
+                        else
+                            return null;
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
                 else if (method == "DELETE" && id > -1)
                 {
-                    var item = manager.get(id);
-                    item.delete();
+                    if (Std.is(id, String))
+                    {
+                        if (id != "")
+                        {
+                            var item = manager.get(id);
+                            item.delete();
+                        }
+                    }
+                    else if (Std.is(id, Int))
+                    {
+                        if (id > -1)
+                        {
+                            var item = manager.get(id);
+                            item.delete();
+                        }
+                    }
                     return null;
                 }
                 else
@@ -576,8 +607,31 @@ class Builder
 
                     if (method == "PUT")
                         item = new $cTypePath();
-                    else if (method == "POST" && id > -1)
-                        item = manager.get(id);
+                    else if (method == "POST")
+                    {
+                        if (Std.is(id, String))
+                        {
+                            if (id != "")
+                                item = manager.get(id);
+                            else
+                            {
+                                php.Web.setReturnCode(500);
+                                php.Lib.print('ID value ' + id + ' is not a valid string.');
+                                return null;
+                            }
+                        }
+                        else if (Std.is(id, Int))
+                        {
+                            if (id > -1)
+                                item = manager.get(id);
+                            else
+                            {
+                                php.Web.setReturnCode(500);
+                                php.Lib.print('ID value ' + id + ' is not a valid integer.');
+                                return null;
+                            }
+                        }
+                    }
                     
                     if (item == null)
                     {
@@ -608,9 +662,8 @@ class Builder
                     },
                     {
                         name: "id",
-                        type: macro :Int,
-                        opt: true,
-                        value: macro -1
+                        type: macro :Null<Dynamic>,
+                        opt: true
                     }
                 ],
                 expr: modifyBody,
