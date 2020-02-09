@@ -75,6 +75,10 @@ class Request
                 else
                     cb(request.responseText, true);
             }
+            else
+            {
+                cb(request.responseText, false);
+            }
         };
         if (data != null)
         {
