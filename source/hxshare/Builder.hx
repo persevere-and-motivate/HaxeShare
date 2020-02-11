@@ -84,7 +84,6 @@ class Builder
         field.typeName = typeName;
         field.isPrimary = isPrimary;
         field.identifier = identifier;
-        field.searchable = searchable;
         field.displayName = displayName;
         _structures[_currentStructure].fields.push(field);
     }
@@ -138,16 +137,6 @@ class Builder
             for (struct in _structures)
             {
                 var classType = macro $i{struct.name};
-                var searchableField = "";
-
-                for (f in struct.fields)
-                {
-                    if (f.searchable)
-                    {
-                        searchableField = f.identifier;
-                        break;
-                    }
-                }
 
                 var caseExpr:Expr = macro
                 {
@@ -161,7 +150,7 @@ class Builder
                             }
                             else if (routes.length == 2)
                             {
-                                if (routes[2] == "search")
+                                if (routes[1] == "search")
                                 {
                                     var value = sys.io.File.getContent("php://input");
                                     var data = Json.parse(value);
@@ -189,7 +178,9 @@ class Builder
                                 }
                                 else if (routes[1] == "search")
                                 {
-                                    Lib.print(Json.stringify($classType.search($e{searchable})));
+                                    var value = sys.io.File.getContent("php://input");
+                                    var data = Json.parse(value);
+                                    Lib.print(Json.stringify($classType.search(data)));
                                 }
                                 else
                                 {
@@ -310,9 +301,6 @@ class Builder
                 });
 
                 sharedTypeMembers.push(f.identifier);
-
-                if (f.searchable)
-                    searchableFields.push(f.identifier);
             }
 
             //
@@ -630,36 +618,33 @@ class Builder
         // marked searchable.
         //
         {
-            if (searchableFields.length > 0)
-            {
-                var searchBody = macro {
-                    var items = manager.dynamicSearch(value);
-                    var results = [];
-                    for (item in items)
-                        results.push(item.toTypedef());
-                    return results;
-                };
+            var searchBody = macro {
+                var items = manager.dynamicSearch(value);
+                var results = [];
+                for (item in items)
+                    results.push(item.toTypedef());
+                return results;
+            };
 
-                var searchFunction:Function = {
-                    args: [
-                        {
-                            name: "value",
-                            type: macro :Dynamic
-                        }
-                    ],
-                    expr: searchBody,
-                    ret: null
-                };
+            var searchFunction:Function = {
+                args: [
+                    {
+                        name: "value",
+                        type: macro :Dynamic
+                    }
+                ],
+                expr: searchBody,
+                ret: null
+            };
 
-                var searchField:Field = {
-                    access: [APublic, AStatic],
-                    kind: FFun(searchFunction),
-                    name: "search",
-                    pos: Context.currentPos()
-                };
+            var searchField:Field = {
+                access: [APublic, AStatic],
+                kind: FFun(searchFunction),
+                name: "search",
+                pos: Context.currentPos()
+            };
 
-                fields.push(searchField);
-            }
+            fields.push(searchField);
         }
 
         return fields;
