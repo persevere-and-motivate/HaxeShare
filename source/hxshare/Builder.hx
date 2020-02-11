@@ -74,9 +74,8 @@ class Builder
     * @param identifier The name of the field when generated.
     * @param isPrimary If true, marks the field as an @:id in the database class when generated on the server.
     * @param displayName (Optional) If generating a form, the `displayName` is used to identify the form field against this field.
-    * @param searchable (Optional) Determines if this field is searchable. Generates the `search()` function of the structure on the server.
     **/
-    public static function addField(typeName:String, identifier:String, ?isPrimary:Bool, ?displayName:String = "", ?searchable:Bool = false)
+    public static function addField(typeName:String, identifier:String, ?isPrimary:Bool, ?displayName:String = "")
     {
         if (_currentStructure == -1)
             return;
@@ -150,114 +149,60 @@ class Builder
                     }
                 }
 
-                var caseExpr:Expr = null;
-
-                if (searchableField != "")
+                var caseExpr:Expr = macro
                 {
-                    var searchable:Expr = {
-                        expr: EObjectDecl([{ field: searchableField, expr: macro routes[2] }]),
-                        pos: Context.currentPos()
-                    };
-
-                    caseExpr = macro
+                    if (routes[0] == $v{struct.restRootURL})
                     {
-                        if (routes[0] == $v{struct.restRootURL})
+                        if (method != "GET")
                         {
-                            if (method != "GET")
+                            if (routes.length == 1)
                             {
-                                if (routes.length == 1)
+                                Lib.print(Json.stringify($classType.modify(method)));
+                            }
+                            else if (routes.length == 2)
+                            {
+                                if (routes[2] == "search")
                                 {
-                                    Lib.print(Json.stringify($classType.modify(method)));
-                                }
-                                else if (routes.length == 2)
-                                {
-                                    if (routes[2] == "search")
-                                    {
-                                        var value = sys.io.File.getContent("php://input");
-                                        var data = Json.parse(value);
-                                        Lib.print(Json.stringify($classType.search(data)));
-                                    }
-                                    else
-                                    {
-                                        var id = Std.parseInt(routes[1]);
-                                        Lib.print(Json.stringify($classType.modify(method, id)));
-                                    }
+                                    var value = sys.io.File.getContent("php://input");
+                                    var data = Json.parse(value);
+                                    Lib.print(Json.stringify($classType.search(data)));
                                 }
                                 else
-                                {
-                                    Web.setReturnCode(500);
-                                    Lib.print("Method '" + method + "' is used for the URL route '" + routes[0] + "' but no `id` was given.");
-                                }
-                            }
-                            else
-                            {
-                                if (routes.length >= 2)
-                                {
-                                    if (routes[1] == "all")
-                                    {
-                                        Lib.print(Json.stringify($classType.all()));
-                                    }
-                                    else if (routes[1] == "search")
-                                    {
-                                        Lib.print(Json.stringify($classType.search($e{searchable})));
-                                    }
-                                    else
-                                    {
-                                        var id = Std.parseInt(routes[1]);
-                                        if (id != null)
-                                        {
-                                            Lib.print(Json.stringify($classType.modify("GET", id)));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    };
-                }
-                else
-                {
-                    caseExpr = macro
-                    {
-                        if (routes[0] == $v{struct.restRootURL})
-                        {
-                            if (method != "GET")
-                            {
-                                if (routes.length == 1)
-                                {
-                                    Lib.print(Json.stringify($classType.modify(method)));
-                                }
-                                else if (routes.length == 2)
                                 {
                                     var id = Std.parseInt(routes[1]);
                                     Lib.print(Json.stringify($classType.modify(method, id)));
                                 }
-                                else
-                                {
-                                    Web.setReturnCode(500);
-                                    Lib.print("Method '" + method + "' is used for the URL route '" + routes[0] + "' but no `id` was given.");
-                                }
                             }
                             else
                             {
-                                if (routes.length >= 2)
+                                Web.setReturnCode(500);
+                                Lib.print("Method '" + method + "' is used for the URL route '" + routes[0] + "' but no `id` was given.");
+                            }
+                        }
+                        else
+                        {
+                            if (routes.length >= 2)
+                            {
+                                if (routes[1] == "all")
                                 {
-                                    if (routes[1] == "all")
+                                    Lib.print(Json.stringify($classType.all()));
+                                }
+                                else if (routes[1] == "search")
+                                {
+                                    Lib.print(Json.stringify($classType.search($e{searchable})));
+                                }
+                                else
+                                {
+                                    var id = Std.parseInt(routes[1]);
+                                    if (id != null)
                                     {
-                                        Lib.print(Json.stringify($classType.all()));
-                                    }
-                                    else
-                                    {
-                                        var id = Std.parseInt(routes[1]);
-                                        if (id != null)
-                                        {
-                                            Lib.print(Json.stringify($classType.modify("GET", id)));
-                                        }
+                                        Lib.print(Json.stringify($classType.modify("GET", id)));
                                     }
                                 }
                             }
                         }
-                    };
-                }
+                    }
+                };
 
                 caseValues.push(caseExpr);
             }
