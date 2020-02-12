@@ -1,10 +1,10 @@
 {
     "name": "haxeshare",
     "classPath": "source",
-    "description": "Client and server-based macro utility for web development.",
+    "description": "A web framework with macro utilities, router, form builders and more.",
     "license": "MIT",
-    "version": "1.0.0",
-    "releasenote": "Foundations.",
+    "version": "1.0.1",
+    "releasenote": "Additional utilities, removed searchables and some minor bug fixes.",
     "url": "https://github.com/persevere-and-motivate/HaxeShare",
     "tags": [ "utility", "web" ],
     "contributors": [ "tienery" ]

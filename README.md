@@ -26,9 +26,9 @@ The following items have been implemented:
  * Generation of client-side typedef structures representing simple data structures.
  * Generation of server-side classes extending `sys.db.Object` from the `record-macros` library with typical additional functionality.
  * Generation of a server-side REST API using generated classes handling specific URLs.
- * A client-side `Router` class with basic functionality.
+ * Generation of custom REST components.
+ * A standard platform-independent `Router`.
  * A `FormBuilder` with the ability to submit data forms easily.
- * Server-based router.
  * Added OAuth on the PHP target (just externs for now. Currently untested).
 
 Essential Features to be added:
@@ -81,7 +81,7 @@ class Generator
         Builder.beginStructure("PM_Department");
         Builder.addField("id", "ID");
         Builder.addField("shorttext", "URL");
-        Builder.addField("shorttext", "Title", true);
+        Builder.addField("shorttext", "Title");
         Builder.addField("longtext", "Description");
 
         Builder.build();
@@ -156,8 +156,8 @@ The REST router generates matches for the following URL's:
   GET :table:/all
      - Calls the generated all() function to retrieve all the objects (without limit) in the database.
 
-  GET :table:/search/:query:
-     - Calls the generated search() function to search using the :query: value. Currently limited to string values.
+  GET :table:/search
+     - Calls the generated search() function to search against an object in POST data. This means when using this parameter, you must give the server an object that will be used as the searching component. Uses the `dynamicSearch` function of `sys.db.Object`.
 
   GET :table:/:id:
      - Calls the generated modify() function to retrieve an object within the given id.
@@ -185,7 +185,7 @@ class Generator
         Builder.beginStructure("PM_Department");
         Builder.addField("id", "ID");
         Builder.addField("shorttext", "URL");
-        Builder.addField("shorttext", "Title", true);
+        Builder.addField("shorttext", "Title");
         Builder.addField("longtext", "Description");
         Builder.addRestRoute("department");
 
@@ -218,6 +218,44 @@ Make sure in your server `Main` you place `@:build` like so:
 class Main
 ...
 ```
+
+### Custom REST components
+
+You can now add custom REST components which allows you to specify a URL that can do more complicated tasks on the server versus the standard generated code as above.
+
+You can do this by calling the function `Builder.customRestComponent()` which takes the following parameters:
+
+```
+    `extension` - This is the second matching component of the URL you want to match.
+    `e` - This is the macro expression that will be output to the matching component.
+```
+
+Take the following example:
+
+```
+Builder.addRestRoute("roadmap");
+Builder.customRestComponent("children", 
+macro 
+{
+    var results = FV_RoadmapItem.manager.search($i{"$ParentID"} > -1);
+    var objects = [];
+    for (result in results)
+    {
+        objects.push(result.toTypedef());
+    }
+    Lib.print(Json.stringify(objects));
+    return;
+});
+```
+
+Here, when calling `roadmap/children` from the client, the following macro expression will be called. This is called regardless of HTTP Method, unless you choose to check this.
+
+Note the following variables in this context are available to you:
+
+ * `method` - This is the HTTP Method obtained from the server.
+ * `routes` - This is an array of URL components split from the original URL given to us from the client. In the case above, that would be [`roadmap`, `children`]. You can use this in the above macro context if you want to add more functionality.
+
+Note too that if you don't call `return;` at the end of the expression, the rest of the function `router` will still be called, which may lead to unwanted results.
 
 ## Form Builder
 A `FormBuilder` class has now been added which allows for easier submission of form data to the server. It currently only supports AJAX requests and requires the use of ID values for picking up elements and their values.
@@ -276,6 +314,29 @@ builder.onValidate = function(data)
 We can do anything with our data at this point, as well as change any existing data. By returning `true`, we tell the builder to submit the data. Returning `false` will stop submission.
 
 There are also `onSubmit` and `onDelete` functions which do not take any arguments and does not return anything, but can be useful if you wish to do anything with UI after any one of these are called, like for example removing an element when `onDelete` is called.
+
+## Using the Request Class
+The `Request` class is a simple interface that allows you to retrieve or modify data primarily from the server. When using this class, it is assumed that the `page` parameter on the server is handled correctly. You can retrieve this on the server-side in Haxe using `php.Web.getParams().get("page")`.
+
+With this out of the way, the following functions are available:
+
+```
+    Request.getPage() - On the client, retrieves a page via AJAX, or on the server, simply checks if the page exists and returns the contents, or otherwise sets a 404 status code.
+
+    Request.get() - Retrieve data from the server.
+
+    Request.post() - POST data to the server.
+
+    Request.put() - PUT data to the server.
+
+    Request.delete() - DELETE data from the server.
+
+    Request.templatise() - A convenience function which replaces % field notation in the contents of the request, with the values of the fields in a given object. Fields inside of the first parameter `into` must wrap the `%` symbol around them for this function to work as expected.
+
+    This function also handles HTML templates for arrays.
+```
+
+More detailed documentation can be found [in the class](https://github.com/persevere-and-motivate/HaxeShare/blob/master/source/hxshare/Request.hx).
 
 ## License
 We use the MIT License.
