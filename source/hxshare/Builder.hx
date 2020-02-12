@@ -99,6 +99,19 @@ class Builder
     }
 
     /**
+    * Apply an extension to the existing RESTful API with a specific URL extension,
+    * and what will be executed when a REST call to this URL is called.
+    *
+    * @param extension The extended parameter (no slashes) to add to the currently 
+    *        selected structure.
+    * @param e The expression to call. 
+    **/ 
+    public static function customRestComponent(extension:String, e:Expr)
+    {
+        _structures[_currentStructure].components.set(extension, e);
+    }
+
+    /**
     * Usually called at macro-initialisation time, this will build and generate code respective of the target language.
     **/
     public static function build()
@@ -137,11 +150,27 @@ class Builder
             for (struct in _structures)
             {
                 var classType = macro $i{struct.name};
+                var components:Array<Expr> = [];
+                for (comp => v in struct.components)
+                {
+                    components.push(macro 
+                    {
+                        if (routes[1] == $v{comp})
+                        {
+                            $e{v};
+                        }
+                    });
+                }
 
                 var caseExpr:Expr = macro
                 {
                     if (routes[0] == $v{struct.restRootURL})
                     {
+                        if (routes.length == 2)
+                        {
+                            $a{components};
+                        }
+
                         if (method != "GET")
                         {
                             if (routes.length == 1)
