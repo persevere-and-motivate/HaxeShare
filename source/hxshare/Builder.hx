@@ -175,7 +175,8 @@ class Builder
                         {
                             if (routes.length == 1)
                             {
-                                Lib.print(Json.stringify($classType.modify(method)));
+                                var value = $classType.modify(method);
+                                Lib.print(Json.stringify(value));
                             }
                             else if (routes.length == 2)
                             {
@@ -185,10 +186,16 @@ class Builder
                                     var data = Json.parse(value);
                                     Lib.print(Json.stringify($classType.search(data)));
                                 }
+                                else if (routes[1] == "")
+                                {
+                                    var value = $classType.modify(method);
+                                    Lib.print(Json.stringify(value));
+                                }
                                 else
                                 {
                                     var id = Std.parseInt(routes[1]);
-                                    Lib.print(Json.stringify($classType.modify(method, id)));
+                                    var value:Dynamic = $classType.modify(method, id);
+                                    Lib.print(Json.stringify(value));
                                 }
                             }
                             else
@@ -317,9 +324,15 @@ class Builder
                 if (type == null)
                     Context.error('`${f.typeName}` type not found.', Context.currentPos());
 
-                if (f.isPrimary)
+                if (f.isPrimary || f.typeName == "id")
                 {
                     primaryField = f.identifier;
+                    typeFields.push({
+                        kind: FVar(macro :String),
+                        pos: Context.currentPos(),
+                        name: "_primaryField",
+                        access: [APrivate]
+                    });
                 }
 
                 typeFields.push({
@@ -426,7 +439,33 @@ class Builder
                     macro hxshare.Builder.finish($v{searchableFields})
                 ]
             });
-            
+
+            //
+            // Constructor
+            //
+            {
+                var constructorBody = macro {
+                    super();
+
+                    _primaryField = $v{primaryField};
+                };
+
+                var constructorFunc:Function = {
+                    args: [],
+                    expr: constructorBody,
+                    ret: macro :Void
+                };
+
+                var constructor:Field = {
+                    kind: FFun(constructorFunc),
+                    name: "new",
+                    pos: Context.currentPos(),
+                    access: [APublic]
+                };
+
+                typeFields.push(constructor);
+            }
+
             var def:TypeDefinition = {
                 fields: typeFields,
                 kind: TDClass({
@@ -541,7 +580,7 @@ class Builder
                         return null;
                     }
                 }
-                else if (method == "DELETE" && id > -1)
+                else if (method == "DELETE")
                 {
                     if (Std.is(id, String))
                     {
@@ -555,6 +594,7 @@ class Builder
                     {
                         if (id > -1)
                         {
+                            php.Lib.print("Deleting Item " + id);
                             var item = manager.get(id);
                             item.delete();
                         }
@@ -595,6 +635,7 @@ class Builder
                         }
                     }
                     
+
                     if (item == null)
                     {
                         php.Web.setReturnCode(500);
@@ -604,14 +645,24 @@ class Builder
 
                     for (field in Reflect.fields(data))
                     {
-                        Reflect.setField(item, field, Reflect.field(data, field));
+                        if (item._primaryField == field)
+                            continue;
+
+                        var obj = Reflect.field(item, field);
+                        var value:Dynamic = Reflect.field(data, field);
+                        if (Std.is(obj, sys.db.Types.SDate) || Std.is(obj, sys.db.Types.SDateTime))
+                        {
+                            value = Date.fromString(value);
+                        }
+                        
+                        Reflect.setField(item, field, value);
                     }
 
                     if (method == "PUT")
                         item.insert();
                     else if (method == "POST")
                         item.update();
-                    
+
                     return item.toTypedef();
                 }
             };
