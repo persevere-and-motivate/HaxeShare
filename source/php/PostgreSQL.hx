@@ -6,6 +6,7 @@ package php;
 import haxe.extern.EitherType;
 import php.Resource;
 
+@:phpGlobal
 extern class PostgreSQL
 {
 

@@ -15,7 +15,7 @@ extern class OAuthProvider
     * 
     * @param params_array Setting these optional parameters is limited to the CLI SAPI.
     **/
-    final public function new(?params_array:Array<Dynamic>);
+    public function new(?params_array:Array<Dynamic>);
 
     /**
     * Add required oauth provider parameters.
