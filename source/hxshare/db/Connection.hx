@@ -11,6 +11,7 @@ class Connection
 {
 
     private var _vendor:Vendor;
+    private var _database:IDatabase;
 
     static var _instance:Connection;
     public static var instance(get, never):Connection;
@@ -28,10 +29,15 @@ class Connection
     {
         _vendor = vendor;
         _instance = this;
+
+        if (vendor == VENDOR_MYSQL)
+        {
+            _database = new Mysql();
+        }
     }
 
     /**
-    * Connects to the database using the following queries.
+    * Connects to the database using the following parameters.
     **/
     public function connect(host:String, user:String, pass:String, database:String, ?port:Int, ?socket:String)
     {
@@ -50,10 +56,12 @@ class Connection
                 if (socket != null)
                     _socket = socket;
                 
-                Mysql.connect(host, user, pass, database, port, socket);
+                return _database.connect(host, user, pass, _db, _port, _socket);
             default:
 
         }
+
+        return false;
     }
 
     /**
@@ -63,29 +71,16 @@ class Connection
     **/
     public function createDatabase(dbName:String)
     {
-        switch (_vendor)
-        {
-            case VENDOR_MYSQL:
-                Mysql.createDatabase(dbName);
-
-            default:
-        }
+        // @NotImplemented
     }
-
-    
 
     /**
     * Retrieves a series of rows from the database.
     **/
     public function select<T>(object:T, ?filter:Map<String, Dynamic>, ?options:Dynamic):Array<T>
     {
-        switch (_vendor)
-        {
-            case VENDOR_MYSQL:
-                return Mysql.select(object, filter, options);
-            default:
-                return null;
-        }
+        // @NotImplemented
+        return null;
     }
 
     /**
@@ -125,12 +120,7 @@ class Connection
     **/
     public function close()
     {
-        switch (_vendor)
-        {
-            case VENDOR_MYSQL:
-                Mysql.close();
-            default:
-        }
+        _database.close();
     }
 
 }

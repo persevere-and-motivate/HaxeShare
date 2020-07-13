@@ -1,18 +1,35 @@
 package hxshare.db.vendors;
 
-import hxshare.db.DBObject;
-
 #if php
 import php.db.Mysqli;
 #end
 
-class Mysql
+class Mysql implements IDatabase
 {
 
-    public static function connect(host:String, user:String, pass:String, database:String, ?port:Int, ?socket:String)
+    #if php
+    var db:Mysqli;
+    #end
+
+    public function new()
+    {
+
+    }
+
+    public function connect(host:String, user:String, pass:String, database:String, ?port:Int, ?socket:String):Bool
     {
         #if php
-        
+        db = new Mysqli();
+        return db.real_connect(host, user, pass, database, port, socket);
+        #else
+        return false;
+        #end
+    }
+
+    public function close()
+    {
+        #if php
+        db.close();
         #end
     }
 
