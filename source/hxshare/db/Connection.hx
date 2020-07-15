@@ -12,12 +12,18 @@ class Connection
 
     private var _vendor:Vendor;
     private var _database:IDatabase;
+    private var _dbName:String;
 
     static var _instance:Connection;
     public static var instance(get, never):Connection;
     static function get_instance()
     {
         return _instance;
+    }
+
+    public static function getDatabaseName()
+    {
+        return instance.getDBName();
     }
 
     /**
@@ -36,6 +42,16 @@ class Connection
         }
     }
 
+    public function getDatabaseObject()
+    {
+        return _database.getDatabaseObject();
+    }
+
+    public function getDBName()
+    {
+        return _dbName;
+    }
+
     /**
     * Connects to the database using the following parameters.
     **/
@@ -47,6 +63,8 @@ class Connection
                 var _db = "";
                 if (database != null)
                     _db = database;
+
+                _dbName = _db;
                 
                 var _port = 3306;
                 if (port != null)
@@ -81,30 +99,6 @@ class Connection
     {
         // @NotImplemented
         return null;
-    }
-
-    /**
-    * Insert data to a specific table in the database.
-    **/
-    public function insert(object:DBObject)
-    {
-        // @NotImplemented
-    }
-
-    /**
-    * Update data to a specific table in the database with the given options.
-    **/
-    public function update(object:DBObject)
-    {
-        // @NotImplemented
-    }
-
-    /**
-    * Deletes from the specific table in the database with the given options.
-    **/
-    public function delete(object:DBObject)
-    {
-        // @NotImplemented
     }
 
     /**

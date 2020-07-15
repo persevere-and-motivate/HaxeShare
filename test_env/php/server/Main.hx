@@ -18,6 +18,15 @@ class Main
         {
             Lib.print("Connected to the server.<br>");
             
+            var object = new TestObject();
+            object.Name = "Masterful";
+            object.Category = 6;
+            object.Posted = Date.now();
+            object.Views = 74;
+            if (object.insert())
+            {
+                Lib.print("Inserted an object at ID: " + object.ID + ".<br>");
+            }
             
             connection.close();
             Lib.print("Closed the connection to the server.");

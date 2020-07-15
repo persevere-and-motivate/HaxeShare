@@ -26,6 +26,15 @@ class Mysql implements IDatabase
         #end
     }
 
+    public function getDatabaseObject()
+    {
+        #if php
+        return db;
+        #else
+        return null;
+        #end
+    }
+
     public function close()
     {
         #if php
