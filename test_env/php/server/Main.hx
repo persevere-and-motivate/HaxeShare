@@ -27,6 +27,12 @@ class Main
             {
                 Lib.print("Inserted an object at ID: " + object.ID + ".<br>");
             }
+
+            object.Views = 31;
+            if (object.update())
+            {
+                Lib.print("Updated an object at ID: " + object.ID + ".<br>");
+            }
             
             connection.close();
             Lib.print("Closed the connection to the server.");
