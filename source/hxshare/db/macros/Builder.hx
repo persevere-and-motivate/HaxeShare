@@ -3,7 +3,6 @@ package hxshare.db.macros;
 
 import haxe.macro.Expr;
 import haxe.macro.Context;
-import haxe.macro.Compiler;
 
 enum DateTimeFormat
 {
@@ -51,14 +50,15 @@ class Builder
         {
             tableName = cls.name.toLowerCase();
         }
-
-
         
         if (Context.defined("php"))
         {
             gen_php_mysql_insert();
             gen_php_mysql_update();
+            gen_php_mysql_delete();
         }
+
+        
 
         return fields;
     }
@@ -396,6 +396,68 @@ class Builder
         };
 
         fields.push(updateField);
+    }
+
+    static function gen_php_mysql_delete()
+    {
+        var primaryKeyField = "";
+
+        for (f in fields)
+        {
+            switch (f.kind)
+            {
+                case FVar(t, e):
+                    if (f.meta != null)
+                    {
+                        var skipField = false;
+                        for (m in f.meta)
+                        {
+                            if (m.name == "primaryKey")
+                            {
+                                primaryKeyField = f.name;
+                                skipField = true;
+                            }
+                        }
+
+                        if (skipField)
+                            continue;
+                    }
+        
+                    
+                default:
+            }
+        }
+
+        var deleteBody = macro {
+            var query = 'DELETE FROM ' + hxshare.db.Connection.getDatabaseName() + '.' + $v{tableName};
+            query += ' WHERE ' + $i{primaryKeyField} + ' = ' + $v{primaryKeyField};
+
+            var db = hxshare.db.Connection.instance.getDatabaseObject();
+            var result = db.query(query);
+            if (!result)
+            {
+                php.Lib.print("Something went wrong trying to execute the following query:<br>");
+                php.Lib.print(query + "<br><br>");
+                return false;
+            }
+
+            return true;
+        };
+
+        var deleteFunction:Function = {
+            ret: macro :Bool,
+            expr: deleteBody,
+            args: []
+        };
+
+        var deleteField:Field = {
+            pos: Context.currentPos(),
+            name: "delete",
+            kind: FFun(deleteFunction),
+            access: [APublic]
+        };
+
+        fields.push(deleteField);
     }
 
 }

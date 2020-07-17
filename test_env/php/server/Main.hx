@@ -33,6 +33,11 @@ class Main
             {
                 Lib.print("Updated an object at ID: " + object.ID + ".<br>");
             }
+
+            if (object.delete())
+            {
+                Lib.print("Just deleted the object at ID: " + object.ID + ".<br>");
+            }
             
             connection.close();
             Lib.print("Closed the connection to the server.");
